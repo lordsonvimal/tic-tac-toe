@@ -2,6 +2,11 @@
 
 package main
 
+import (
+	"encoding/json"
+	"log"
+)
+
 type status string
 
 const (
@@ -11,7 +16,7 @@ const (
 )
 
 type player struct {
-	Id int `json: id`
+	id int
 }
 
 type game struct {
@@ -34,12 +39,12 @@ func newGame() *game {
 }
 
 // Restart game between same players
-func (g *game) restartGame(p player) *game {
-	g.Status = pairing
-	g.players = append(g.players, p)
-	g.Move = -1
-	return g
-}
+// func (g *game) restartGame(p player) *game {
+// 	g.Status = pairing
+// 	g.players = append(g.players, p)
+// 	g.Move = -1
+// 	return g
+// }
 
 // In case a player disconnects, then wait for 30 secs in client and do a reset
 func (g *game) resetGame() {
@@ -56,7 +61,7 @@ func (g *game) addPlayer() *player {
 	}
 
 	if l == 0 || l == 1 {
-		p.Id = l
+		p.id = l
 		g.players = append(g.players, p)
 	}
 
@@ -80,5 +85,9 @@ func (g *game) makeMove(move int) *game {
 }
 
 func (g *game) toJSON() []byte {
-	return []byte{}
+	json, err := json.Marshal(g)
+	if err != nil {
+		log.Fatal("Error in marshalling json:", err)
+	}
+	return json
 }

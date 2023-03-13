@@ -21,8 +21,6 @@ type connections struct {
 	connections map[*connection]struct{}
 	// Inbound messages from the connections.
 	receiveMove chan bool
-	logMx       sync.RWMutex
-	log         [][]byte
 	g           *game
 }
 
