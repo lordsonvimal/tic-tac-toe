@@ -13,8 +13,8 @@ const timeoutBeforeReBroadcast = 5 //TODO: should probably be set higher in real
 // which is not answering
 const timeoutBeforeConnectionDrop = 1
 
-// connections handles the update of the gameState between two players
-type connections struct {
+// room handles the update of the gameState between two players
+type room struct {
 	// the mutex to protect connections
 	connectionsMx sync.RWMutex
 	// Registered connections.
@@ -24,9 +24,9 @@ type connections struct {
 	g           *game
 }
 
-// newConnections is the constructor for the connectionPair struct
-func newConnections() *connections {
-	cp := &connections{
+// newRoom is the constructor for the connectionPair struct
+func newRoom() *room {
+	cp := &room{
 		connectionsMx: sync.RWMutex{},
 		receiveMove:   make(chan bool),
 		connections:   make(map[*connection]struct{}),
@@ -58,7 +58,7 @@ func newConnections() *connections {
 }
 
 // addConnection adds a players connection to the connectionPair
-func (h *connections) addConnection(conn *connection) {
+func (h *room) addConnection(conn *connection) {
 	h.connectionsMx.Lock()
 	defer h.connectionsMx.Unlock()
 	// TODO: Should be checking if the same user gets paired to himself
@@ -69,7 +69,7 @@ func (h *connections) addConnection(conn *connection) {
 }
 
 // removeConnection removes a players connection from the connectionPair
-func (h *connections) removeConnection(conn *connection) {
+func (h *room) removeConnection(conn *connection) {
 	h.connectionsMx.Lock()
 	defer h.connectionsMx.Unlock()
 	if _, ok := h.connections[conn]; ok {

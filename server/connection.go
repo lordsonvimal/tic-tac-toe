@@ -11,13 +11,13 @@ import (
 )
 
 // connections stores all the hubs
-var playerConnections []*connections
+var playerConnections []*room
 
 type connection struct {
 	// Channel which triggers the connection to update the gameState
 	doBroadcast chan bool
 	// The connectionPair. Holds up to 2 connections.
-	cp *connections
+	cp *room
 	// playerNum represents the players Slot. Either 0 or 1
 	playerNum int
 }
@@ -48,7 +48,7 @@ func (c *connection) writer(wg *sync.WaitGroup, wsConn *websocket.Conn) {
 
 // getConnectionPairWithEmptySlot looks trough all connectionPairs and finds one which has only 1 player
 // if there is none a new connectionPair is created and the player is added to that pair
-func getConnectionPairWithEmptySlot() (*connections, int) {
+func getConnectionPairWithEmptySlot() (*room, int) {
 	sizeBefore := len(playerConnections)
 	// find connections with 1 player first and pair if possible
 	for _, h := range playerConnections {
@@ -61,7 +61,7 @@ func getConnectionPairWithEmptySlot() (*connections, int) {
 	//TODO: I need to remove orphaned connectionPairs from the stack
 
 	// if no emtpy slow was found at all, we create a new connectionPair
-	h := newConnections()
+	h := newRoom()
 	playerConnections = append(playerConnections, h)
 	log.Printf("Player seated in new connectionPair no. %v", len(playerConnections))
 	return playerConnections[sizeBefore], 0
