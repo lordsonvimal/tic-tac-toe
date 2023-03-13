@@ -11,7 +11,7 @@ import (
 )
 
 // connections stores all the hubs
-var playerConnections []*room
+var rooms []*room
 
 type connection struct {
 	// Channel which triggers the connection to update the gameState
@@ -49,9 +49,9 @@ func (c *connection) writer(wg *sync.WaitGroup, wsConn *websocket.Conn) {
 // getConnectionPairWithEmptySlot looks trough all connectionPairs and finds one which has only 1 player
 // if there is none a new connectionPair is created and the player is added to that pair
 func getConnectionPairWithEmptySlot() (*room, int) {
-	sizeBefore := len(playerConnections)
+	sizeBefore := len(rooms)
 	// find connections with 1 player first and pair if possible
-	for _, h := range playerConnections {
+	for _, h := range rooms {
 		if len(h.connections) == 1 {
 			log.Printf("Players paired")
 			return h, len(h.connections)
@@ -62,9 +62,9 @@ func getConnectionPairWithEmptySlot() (*room, int) {
 
 	// if no emtpy slow was found at all, we create a new connectionPair
 	h := newRoom()
-	playerConnections = append(playerConnections, h)
-	log.Printf("Player seated in new connectionPair no. %v", len(playerConnections))
-	return playerConnections[sizeBefore], 0
+	rooms = append(rooms, h)
+	log.Printf("Player seated in new connectionPair no. %v", len(rooms))
+	return rooms[sizeBefore], 0
 }
 
 // ServeHTTP is the routers HandleFunc for websocket connections
