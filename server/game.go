@@ -2,13 +2,17 @@
 
 package main
 
-type status int
+type status string
 
 const (
-	pairing status = iota
-	started
-	end
+	pairing status = "pairing"
+	restart status = "restart"
+	started status = "started"
 )
+
+type player struct {
+	Id int `json: id`
+}
 
 type game struct {
 	// Exported to JSON
@@ -17,35 +21,46 @@ type game struct {
 	Status     status
 
 	// Not exported to JSON
-	noOfPlayers int
+	players []player
 }
 
 func newGame() *game {
 	g := &game{
-		Move:        -1,
-		Status:      pairing,
-		noOfPlayers: 0,
-		PlayerTurn:  0,
+		Move:       -1,
+		Status:     pairing,
+		PlayerTurn: 0,
 	}
 	return g
 }
 
 // Restart game between same players
-func (g *game) restartGame() *game {
+func (g *game) restartGame(p player) *game {
 	g.Status = pairing
-	g.noOfPlayers += 1
+	g.players = append(g.players, p)
 	g.Move = -1
 	return g
 }
 
 // In case a player disconnects, then wait for 30 secs in client and do a reset
-func resetGame() {
-
+func (g *game) resetGame() {
+	g.players = []player{}
 }
 
 // Add player to a game
-func addPlayer() {
+func (g *game) addPlayer() *player {
+	p := player{}
+	l := len(g.players)
 
+	if l == 1 {
+		g.Status = started
+	}
+
+	if l == 0 || l == 1 {
+		p.Id = l
+		g.players = append(g.players, p)
+	}
+
+	return &p
 }
 
 // Whenever a player makes a move, switch turn
@@ -60,14 +75,10 @@ func (g *game) switchTurn() *game {
 
 func (g *game) makeMove(move int) *game {
 	g.Move = move
+	g.switchTurn()
 	return g
 }
 
-func (g *game) end() *game {
-	g.Status = end
-	return g
-}
-
-func toJSON() {
-
+func (g *game) toJSON() []byte {
+	return []byte{}
 }
