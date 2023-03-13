@@ -51,8 +51,9 @@ func main() {
 	flag.Parse()
 	log.SetFlags(0)
 	r := gin.Default()
-	r.GET("/gameServer", gameServer)
-	r.GET("/", home)
+	// r.GET("/gameServer", gameServer)
+	// r.GET("/", home)
+	r.GET("/ws", ServeHTTP)
 	log.Fatal(r.Run(*addr))
 }
 

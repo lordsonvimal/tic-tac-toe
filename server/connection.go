@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"sync"
 
+	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 )
 
@@ -20,9 +21,6 @@ type connection struct {
 	// playerNum represents the players Slot. Either 0 or 1
 	playerNum int
 }
-
-// wsHandler implements the Handler Interface
-type wsHandler struct{}
 
 // reader reads the moves from the clients ws-connection
 func (c *connection) reader(wg *sync.WaitGroup, wsConn *websocket.Conn) {
@@ -72,7 +70,8 @@ func getConnectionPairWithEmptySlot() (*connections, int) {
 // ServeHTTP is the routers HandleFunc for websocket connections
 // connections are upgraded to websocket connections and the player is added
 // to a connection pair
-func (wsh wsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func ServeHTTP(ctx *gin.Context) {
+	w, r := ctx.Writer, ctx.Request
 
 	// upgrader is needed to upgrade the HTTP Connection to a websocket Connection
 	upgrader := &websocket.Upgrader{
