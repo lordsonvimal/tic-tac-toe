@@ -15,7 +15,9 @@ type room struct {
 	connections   map[uuid.UUID]*connection // Registered connections
 }
 
-var rooms map[uuid.UUID]*room
+type Rooms map[uuid.UUID]*room
+
+var rooms = make(Rooms)
 
 // newRoom is the constructor for storing connections in a room
 func newRoom(id uuid.UUID) *room {
@@ -75,6 +77,7 @@ func (r *room) addConnection(conn *connection) {
 	r.connectionsMx.Lock()
 	defer r.connectionsMx.Unlock()
 	r.connections[conn.id] = conn
+	// fmt.Println("[Player] connected")
 	log.Println("[Player] connected")
 }
 
@@ -88,7 +91,7 @@ func (r *room) removeConnection(conn *connection) {
 	delete(r.connections, conn.id)
 
 	if len(r.connections) == 0 {
-		log.Println("[Room] cleared")
+		log.Printf("[Room] cleared: %s", r.id)
 		delete(rooms, r.id)
 	}
 

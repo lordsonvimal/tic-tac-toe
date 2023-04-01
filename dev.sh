@@ -1,2 +1,2 @@
 #!/usr/bin/env bash
-pnpm -C client/ dev & go run server/*
+pnpm -C client/ dev & gin --appPort 8080 --path server/

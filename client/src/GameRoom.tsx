@@ -12,7 +12,7 @@ const STATUS = {
 export function GameRoom() {
   const [status, setStatus] = createSignal<typeof STATUS[keyof typeof STATUS]>(STATUS.connecting);
 
-  const websocket = connect("ws://localhost:8080/ws");
+  const websocket = connect("ws://localhost:3000/ws");
 
   onCleanup(() => {
     websocket.close();

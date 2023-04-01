@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"net/http"
+	"sync"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -15,15 +16,17 @@ type connection struct {
 	id     uuid.UUID // playerId
 }
 
-// read reads the moves from the clients ws-connection
-func (c *connection) read() {
+// reads the moves from the clients ws-connection
+func read(c *connection, wg *sync.WaitGroup) {
 	for {
 		// Reading next move from connection here
-		_, clientMessage, err := c.wsConn.ReadMessage()
+		messageType, clientMessage, err := c.wsConn.ReadMessage()
+
+		log.Printf("[Type: %d][Message]: %s", messageType, clientMessage)
 
 		if err != nil {
-			log.Fatalln(clientMessage)
-			log.Fatalln(err)
+			log.Println("[ERROR]", err)
+			wg.Done()
 			c.close()
 			break
 		}
@@ -35,10 +38,8 @@ func (c *connection) read() {
 }
 
 // write something to the connection
-func (c *connection) write() {
-	// for range c.doBroadcast {
-	// 	sendGameStateToConnection(wsConn, c)
-	// }
+func (c *connection) write(data string) {
+	c.wsConn.WriteMessage(1, []byte(data))
 }
 
 func (c *connection) close() {
@@ -112,7 +113,10 @@ func createWS(ctx *gin.Context) {
 	JoinRoom(c)
 
 	//the websocket connection is always open. Close it from a client request / response
-	go c.read()
+	wg := &sync.WaitGroup{}
+	wg.Add(1)
+	go read(c, wg)
+	wg.Wait()
 }
 
 // sendGameStateToConnection broadcasts the current gameState as JSON to all players
