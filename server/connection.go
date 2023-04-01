@@ -17,7 +17,7 @@ type connection struct {
 }
 
 // reads the moves from the clients ws-connection
-func read(c *connection, wg *sync.WaitGroup) {
+func (c *connection) read(wg *sync.WaitGroup) {
 	for {
 		// Reading next move from connection here
 		messageType, clientMessage, err := c.wsConn.ReadMessage()
@@ -115,7 +115,7 @@ func createWS(ctx *gin.Context) {
 	//the websocket connection is always open. Close it from a client request / response
 	wg := &sync.WaitGroup{}
 	wg.Add(1)
-	go read(c, wg)
+	go c.read(wg)
 	wg.Wait()
 }
 
