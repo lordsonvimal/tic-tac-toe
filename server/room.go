@@ -1,81 +1,96 @@
 package main
 
 import (
+	"errors"
 	"log"
 	"sync"
-	"time"
+
+	"github.com/google/uuid"
 )
 
-// timeoutBeforeReBroadcast sets the time in seconds after where we rebroadcast the gameState
-// to all clients. This way we see if the opponent is still there
-const timeoutBeforeReBroadcast = 5 //TODO: should probably be set higher in real world usages...
-// timeoutBeforeConnectionDrop sets the time in seconds after after we drop a connection
-// which is not answering
-const timeoutBeforeConnectionDrop = 1
-
-// room handles the update of the gameState between two players
+// Room manages the connections
 type room struct {
-	// the mutex to protect connections
-	connectionsMx sync.RWMutex
-	// Registered connections.
-	connections map[*connection]struct{}
-	// Inbound messages from the connections.
-	receiveMove chan bool
-	g           *game
+	id            uuid.UUID
+	connectionsMx sync.RWMutex              // mutex to protect connections
+	connections   map[uuid.UUID]*connection // Registered connections
 }
 
-// newRoom is the constructor for the connectionPair struct
-func newRoom() *room {
-	cp := &room{
+var rooms map[uuid.UUID]*room
+
+// newRoom is the constructor for storing connections in a room
+func newRoom(id uuid.UUID) *room {
+	r := &room{
+		id:            id,
 		connectionsMx: sync.RWMutex{},
-		receiveMove:   make(chan bool),
-		connections:   make(map[*connection]struct{}),
-		g:             newGame(),
+		connections:   make(map[uuid.UUID]*connection),
 	}
 
-	go func() {
-		for {
-			select {
-			//waiting for an update of one of the clients in the connection pair
-			case <-cp.receiveMove:
-			case <-time.After(timeoutBeforeReBroadcast * time.Second): //After x seconds we do broadcast again to see if the opp. is still there
-			}
+	rooms[id] = r
 
-			cp.connectionsMx.RLock()
-			for c := range cp.connections {
-				select {
-				case c.doBroadcast <- true:
-				// stop trying to send to this connection after trying for 1 second.
-				// if we have to stop, it means that a reader died so remove the connection also.
-				case <-time.After(timeoutBeforeConnectionDrop * time.Second):
-					cp.removeConnection(c)
-				}
-			}
-			cp.connectionsMx.RUnlock()
-		}
-	}()
-	return cp
+	// go func() {
+	// 	for {
+	// 		select {
+	// 		//waiting for an update of one of the clients in the connection pair
+	// 		case <-cp.receiveMove:
+	// 		case <-time.After(timeoutBeforeReBroadcast * time.Second): //After x seconds we do broadcast again to see if the opp. is still there
+	// 		}
+
+	// 		cp.connectionsMx.RLock()
+	// 		for c := range cp.connections {
+	// 			select {
+	// 			case c.doBroadcast <- true:
+	// 			// stop trying to send to this connection after trying for 1 second.
+	// 			// if we have to stop, it means that a reader died so remove the connection also.
+	// 			case <-time.After(timeoutBeforeConnectionDrop * time.Second):
+	// 				cp.removeConnection(c)
+	// 			}
+	// 		}
+	// 		cp.connectionsMx.RUnlock()
+	// 	}
+	// }()
+	return r
+}
+
+func JoinRoom(conn *connection) *room {
+	if gr, ok := rooms[conn.roomId]; ok {
+		return gr
+	}
+
+	r := newRoom(conn.roomId)
+	r.addConnection(conn)
+
+	return r
+}
+
+func GetRoom(conn *connection) (*room, error) {
+	if r, ok := rooms[conn.roomId]; ok {
+		return r, nil
+	}
+
+	return &room{}, errors.New("room was not found")
 }
 
 // addConnection adds a players connection to the connectionPair
-func (h *room) addConnection(conn *connection) {
-	h.connectionsMx.Lock()
-	defer h.connectionsMx.Unlock()
-	// TODO: Should be checking if the same user gets paired to himself
-	// TODO: by reloading the page. We could achieve that with setting
-	// TODO: cookies to re-identify users
-	h.connections[conn] = struct{}{}
-
+func (r *room) addConnection(conn *connection) {
+	r.connectionsMx.Lock()
+	defer r.connectionsMx.Unlock()
+	r.connections[conn.id] = conn
+	log.Println("[Player] connected")
 }
 
-// removeConnection removes a players connection from the connectionPair
-func (h *room) removeConnection(conn *connection) {
-	h.connectionsMx.Lock()
-	defer h.connectionsMx.Unlock()
-	if _, ok := h.connections[conn]; ok {
-		delete(h.connections, conn)
-		close(conn.doBroadcast)
+// removeConnection removes a player
+func (r *room) removeConnection(conn *connection) {
+	r.connectionsMx.Lock()
+	defer r.connectionsMx.Unlock()
+	// if _, ok := r.connections[conn.id]; ok {
+	// 	// close(conn.doBroadcast)
+	// }
+	delete(r.connections, conn.id)
+
+	if len(r.connections) == 0 {
+		log.Println("[Room] cleared")
+		delete(rooms, r.id)
 	}
-	log.Println("Player disconnected")
-	h.g.resetGame()
+
+	log.Println("[Player] disconnected")
 }

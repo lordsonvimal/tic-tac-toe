@@ -7,51 +7,15 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-var addr = flag.String("addr", ":8080", "http service address")
-
-// var upgrader = websocket.Upgrader{} // use default option
-
-// func gameServer(ctx *gin.Context) {
-// 	w, r := ctx.Writer, ctx.Request
-// 	c, err := upgrader.Upgrade(w, r, nil)
-
-// 	if err != nil {
-// 		log.Println("[ERROR] upgrade:", err, ctx.Request.Header)
-// 		return
-// 	}
-
-// 	defer c.Close()
-
-// 	for {
-// 		mt, message, err := c.ReadMessage()
-
-// 		if err != nil {
-// 			log.Println("[ERROR] read:", err)
-// 			break
-// 		}
-
-// 		log.Printf("recv:%s", message)
-
-// 		err = c.WriteMessage(mt, message)
-
-// 		if err != nil {
-// 			log.Println("[ERROR] write:", err)
-// 			break
-// 		}
-// 	}
-// }
-
-// func home(c *gin.Context) {
-// 	homeTemplate.Execute(c.Writer, "ws://"+c.Request.Host+"/gameServer")
-// }
+var addr = flag.String("addr", ":8080", "Starts HTTP app server at this port")
 
 func main() {
 	flag.Parse()
 	log.SetFlags(0)
 	r := gin.Default()
-	// r.GET("/gameServer", gameServer)
-	// r.GET("/", home)
-	r.GET("/ws", ServeHTTP)
+
+	r.GET("/ws", CreateWS)
+
 	log.Fatal(r.Run(*addr))
 }
 
