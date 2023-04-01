@@ -82,10 +82,10 @@ func getId(ctx *gin.Context, key string) uuid.UUID {
 	return id
 }
 
-// CreateWS is the routers HandleFunc for websocket connections
+// createWS is the routers HandleFunc for websocket connections
 // connections are upgraded to websocket connections and the player is added
 // to a connection pair
-func CreateWS(ctx *gin.Context) {
+func createWS(ctx *gin.Context) {
 	w, r := ctx.Writer, ctx.Request
 
 	// upgrader is needed to upgrade the HTTP Connection to a websocket Connection
