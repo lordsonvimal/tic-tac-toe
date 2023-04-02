@@ -26,7 +26,6 @@ type TicTacToe = {
     Status: typeof GAME_STATUS[keyof typeof GAME_STATUS],
     Turn: string
   },
-  Sender: "GAME" | "ROOM",
   Status: typeof CONNECTION_STATUS[keyof typeof CONNECTION_STATUS]
 };
 
@@ -34,6 +33,7 @@ export function GameRoom() {
   const [connectionStatus, setConnectionStatus] = createSignal<typeof GAME_STATUS[keyof typeof GAME_STATUS]>(CONNECTION_STATUS.connecting);
   const [gameStatus, setGameStatus] = createSignal(GAME_STATUS.pending);
   const [playerId, setPlayerId] = createSignal("");
+  const [opponentId, setOpponentId] = createSignal("");
   const [roomId, setRoomId] = createSignal("");
   const [isPlayerTurn, setIsPlayerTurn] = createSignal(false);
   const [playerShape, setPlayerShape] = createSignal("");
@@ -54,7 +54,6 @@ export function GameRoom() {
   const onMessage = (event: MessageEvent<string>) => {
     try {
       const data = JSON.parse(event.data) as TicTacToe;
-      console.log(data);
       switch(data.Game.Status) {
         case GAME_STATUS.turn: {
           if (moves()[data.Game.Data]) return;
@@ -70,6 +69,11 @@ export function GameRoom() {
           setPlayerShape(data.Game.Player[playerId()]);
           setIsPlayerTurn(data.Game.Turn === playerShape());
           setGameStatus(GAME_STATUS.started);
+          Object.keys(data.Game.Player).forEach(id => {
+            if (id !== playerId()) {
+              setOpponentId(id);
+            }
+          });
           return;
         }
       }
@@ -115,7 +119,6 @@ export function GameRoom() {
         Turn: playerShape()
       },
       Id: roomId(),
-      Sender: "GAME",
       Status: connectionStatus()
     };
   }

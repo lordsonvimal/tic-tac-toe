@@ -15,15 +15,12 @@ const (
 	ROOM_REMOVED            status = "ROOM_REMOVED"
 )
 
-const SENDER_ROOM sender = "ROOM"
-
 // Room manages the connections
 type room struct {
 	Connection    uuid.UUID // Player that modified the status
 	Game          game
 	Id            uuid.UUID
 	Status        status
-	Sender        sender
 	connectionsMx sync.RWMutex              // mutex to protect connections
 	connections   map[uuid.UUID]*connection // Registered connections
 }
@@ -37,7 +34,6 @@ func NewRoom(id uuid.UUID) *room {
 	r := &room{
 		Id:            id,
 		Game:          NewGame(),
-		Sender:        SENDER_ROOM,
 		connectionsMx: sync.RWMutex{},
 		connections:   make(map[uuid.UUID]*connection),
 	}

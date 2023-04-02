@@ -14,8 +14,6 @@ const (
 	PLAYER_TURN_CHANGE status = "PLAYER_TURN_CHANGE"
 )
 
-const SENDER_GAME sender = "GAME"
-
 type ticTacToe string
 
 const (
@@ -60,7 +58,6 @@ func ReadGameState(conn *connection, data []byte) {
 	switch s := newRoom.Game.Status; s {
 	case PLAYER_TURN:
 		r.Game.Status = PLAYER_TURN
-		r.Sender = SENDER_GAME
 		r.Game.Data = newRoom.Game.Data
 		r.Broadcast(r.ToJSON())
 
@@ -87,7 +84,6 @@ func StartGame(r *room, conn *connection) bool {
 		r.Game.Turn = O
 		r.Game.Status = GAME_STARTED
 		r.Game.Player[conn.id] = O
-		r.Sender = SENDER_GAME
 		return true
 	}
 
