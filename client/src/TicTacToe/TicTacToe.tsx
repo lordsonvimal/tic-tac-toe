@@ -21,7 +21,10 @@ export function TicTacToe(props: Props) {
   return (
     <div class="tic-tac-toe">
       <For each={cells}>
-        {(item, index) => <button class="cell clickable" onClick={[handleClick, index()]}>{props.moves[item] || ""}</button>}
+        {(item, index) => {
+          console.log("rendering item: ", item);
+          return <button class="cell clickable" onClick={[handleClick, index()]}>{props.moves[item] || ""}</button>
+        }}
       </For>
     </div>
   );

@@ -99,7 +99,7 @@ func (r *room) RemoveConnection(conn *connection) {
 		r.UpdateConnection(ROOM_REMOVED, conn)
 	}
 
-	log.Println("[Player] disconnected")
+	log.Printf("[Player] disconnected: %s", conn.id)
 	r.Broadcast(r.ToJSON())
 }
 

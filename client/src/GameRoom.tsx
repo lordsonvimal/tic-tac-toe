@@ -1,6 +1,6 @@
 import { TicTacToe } from "./TicTacToe/TicTacToe";
 import { connect } from "./connect";
-import { createSignal, Match, Switch, onCleanup, createEffect } from "solid-js";
+import { createSignal, Match, Switch, onCleanup, createEffect, Show } from "solid-js";
 
 const CONNECTION_STATUS = {
   connecting: "CONNECTION_CONNECTING",
@@ -38,6 +38,49 @@ export function GameRoom() {
   const [isPlayerTurn, setIsPlayerTurn] = createSignal(false);
   const [playerShape, setPlayerShape] = createSignal("");
   const [moves, setMoves] = createSignal<Record<number, string >>({});
+  const [winner, setWinner] = createSignal("");
+
+  const checkWinner = () => {
+    const setEndGame = (match: string | null) => {
+      setGameStatus(GAME_STATUS.ended);
+      if (!match) {
+        setWinner("DRAW");
+        return;
+      }
+      if (match === playerShape()) setWinner("YOU WIN!!!");
+      else setWinner(`YOU LOSE!!!`);
+    }
+
+    const compare = (a: any, b: any, c: any) => {
+      if (a) {
+        if (a === b && a === c) {
+          setEndGame(a);
+          return true;
+        }
+      }
+      return false;
+    }
+
+    if (compare(moves()[0], moves()[1], moves()[2])) return;
+    if (compare(moves()[0], moves()[3], moves()[6])) return;
+    if (compare(moves()[0], moves()[4], moves()[8])) return;
+    if (compare(moves()[1], moves()[4], moves()[7])) return;
+    if (compare(moves()[2], moves()[5], moves()[8])) return;
+    if (compare(moves()[2], moves()[4], moves()[6])) return;
+    if (compare(moves()[3], moves()[4], moves()[5])) return;
+    if (compare(moves()[6], moves()[7], moves()[8])) return;
+
+    if (Object.keys(moves()).length === 9) setEndGame(null);
+
+    // console.log(`ROOM ID: ${roomId()}, PLAYER ID: ${playerId()}, SHAPE: ${playerShape()}, TURN: ${isPlayerTurn()}`);
+  };
+
+  const updateMoves = (num: number, shape: string) => {
+    if (moves()[num]) return;
+    const newMoves = {...moves(), [num]: shape};
+    setMoves(newMoves);
+    checkWinner();
+  };
 
   const onOpen = () => {
     setConnectionStatus(CONNECTION_STATUS.connected);
@@ -56,9 +99,8 @@ export function GameRoom() {
       const data = JSON.parse(event.data) as TicTacToe;
       switch(data.Game.Status) {
         case GAME_STATUS.turn: {
-          if (moves()[data.Game.Data]) return;
           // Receive other player move from server
-          setMoves({ ...moves(), [data.Game.Data]: data.Game.Turn });
+          updateMoves(data.Game.Data, data.Game.Turn);
           return;
         }
         case GAME_STATUS.turnChange: {
@@ -124,19 +166,15 @@ export function GameRoom() {
   }
 
   const onTurn = (num: number) => {
-    const newMoves = {...moves(), [num]: playerShape()};
-    setMoves(newMoves);
+    updateMoves(num, playerShape());
     sendMessage(getTurnData(num));
     setIsPlayerTurn(false);
   };
 
-  // createEffect(() => {
-  //   console.log(`ROOM ID: ${roomId()}, PLAYER ID: ${playerId()}, SHAPE: ${playerShape()}, TURN: ${isPlayerTurn()}`);
-  // });
-
   return (
     <>
       <TicTacToe isPlayerTurn={isPlayerTurn() && gameStatus() === GAME_STATUS.started} moves={moves()} onTurn={onTurn} />
+      <Show when={winner()}>{`winner is ${winner()}`}</Show>
       <Switch>
         <Match when={connectionStatus() === CONNECTION_STATUS.connecting}>
           <div>Connecting to game room</div>
