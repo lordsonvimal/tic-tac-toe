@@ -10,7 +10,7 @@ import (
 const (
 	GAME_PENDING status = "GAME_PENDING"
 	GAME_STARTED status = "GAME_STARTED"
-	PLAYER_MOVED status = "PLAYER_MOVED"
+	PLAYER_TURN  status = "PLAYER_TURN"
 )
 
 const SENDER_GAME sender = "GAME"
@@ -46,11 +46,12 @@ func ReadGameState(conn *connection, data []byte) {
 	}
 
 	switch s := newRoom.Status; s {
-	case PLAYER_MOVED:
-		r.Status = newRoom.Status
+	case PLAYER_TURN:
+		r.Status = PLAYER_TURN
 		r.Sender = SENDER_GAME
-		r.Data = newRoom.Data
+		r.Game.Data = newRoom.Game.Data
 		r.Broadcast(r.ToJSON())
+		return
 	}
 }
 
