@@ -1,93 +1,77 @@
-// https://github.com/riscie/websocket-tic-tac-toe/blob/350af6181fed/game.go
-
 package main
 
 import (
 	"encoding/json"
 	"log"
-)
 
-type status string
+	"github.com/google/uuid"
+)
 
 const (
-	pairing status = "pairing"
-	restart status = "restart"
-	started status = "started"
+	GAME_PENDING status = "GAME_PENDING"
+	GAME_STARTED status = "GAME_STARTED"
+	PLAYER_MOVED status = "PLAYER_MOVED"
 )
 
-type player struct {
-	id int
-}
+const SENDER_GAME sender = "GAME"
+
+type ticTacToe string
+
+const (
+	X ticTacToe = "X"
+	Y ticTacToe = "Y"
+)
+
+type player map[uuid.UUID]ticTacToe
 
 type game struct {
-	// Exported to JSON
-	Move       int
-	PlayerTurn int
-	Status     status
-
-	// Not exported to JSON
-	players []player
+	Turn   uuid.UUID
+	Data   int
+	Player player
+	Status status
 }
 
-func newGame() *game {
-	g := &game{
-		Move:       -1,
-		Status:     pairing,
-		PlayerTurn: 0,
-	}
-	return g
-}
-
-// Restart game between same players
-// func (g *game) restartGame(p player) *game {
-// 	g.Status = pairing
-// 	g.players = append(g.players, p)
-// 	g.Move = -1
-// 	return g
-// }
-
-// In case a player disconnects, then wait for 30 secs in client and do a reset
-func (g *game) resetGame() {
-	g.players = []player{}
-}
-
-// Add player to a game
-func (g *game) addPlayer() *player {
-	p := player{}
-	l := len(g.players)
-
-	if l == 1 {
-		g.Status = started
+func ReadGameState(conn *connection, data []byte) {
+	newRoom := room{}
+	if err := json.Unmarshal(data, &newRoom); err != nil {
+		log.Printf("[ERROR] Unmarshalling data to room: %s", string(data))
+		return
 	}
 
-	if l == 0 || l == 1 {
-		p.id = l
-		g.players = append(g.players, p)
-	}
+	r, err := GetRoom(conn)
 
-	return &p
-}
-
-// Whenever a player makes a move, switch turn
-func (g *game) switchTurn() *game {
-	if g.PlayerTurn == 0 {
-		g.PlayerTurn = 1
-	} else {
-		g.PlayerTurn = 0
-	}
-	return g
-}
-
-func (g *game) makeMove(move int) *game {
-	g.Move = move
-	g.switchTurn()
-	return g
-}
-
-func (g *game) toJSON() []byte {
-	json, err := json.Marshal(g)
 	if err != nil {
-		log.Fatal("Error in marshalling json:", err)
+		log.Printf("[ERROR] Fetching Room from connection : %s", conn.id)
+		return
 	}
-	return json
+
+	switch s := newRoom.Status; s {
+	case PLAYER_MOVED:
+		r.Status = newRoom.Status
+		r.Sender = SENDER_GAME
+		r.Data = newRoom.Data
+		r.Broadcast(r.ToJSON())
+	}
+}
+
+func NewGame() game {
+	return game{
+		Data:   -1,
+		Player: make(player),
+		Status: GAME_PENDING,
+	}
+}
+
+func StartGame(r *room, conn *connection) {
+	if len(r.connections) == 1 {
+		r.Game.Player[conn.id] = X
+	}
+
+	if len(r.connections) == 2 && r.Game.Status == GAME_PENDING {
+		r.Game.Turn = conn.id
+		r.Game.Status = GAME_STARTED
+		r.Game.Player[conn.id] = Y
+		r.Sender = SENDER_GAME
+		r.Broadcast(r.ToJSON())
+	}
 }

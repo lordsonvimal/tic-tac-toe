@@ -25,63 +25,39 @@ func (c *connection) read(wg *sync.WaitGroup) {
 		log.Printf("[Type: %d][Message]: %s", messageType, clientMessage)
 
 		if err != nil {
-			log.Println("[ERROR]", err)
+			log.Println("[ERROR] while read", err)
 			wg.Done()
 			c.close()
 			break
 		}
-
-		// field, _ := strconv.ParseInt(string(clientMoveMessage[:]), 10, 32) //Getting FieldValue From Player Action
-		// c.cp.g.makeMove(int(field))
-		// c.cp.receiveMove <- true //telling connectionPair to broadcast the gameState
 	}
 }
 
 // write something to the connection
-func (c *connection) write(data string) {
-	c.wsConn.WriteMessage(1, []byte(data))
+func (c *connection) write(data []byte) {
+	if err := c.wsConn.WriteMessage(websocket.TextMessage, data); err != nil {
+		log.Println("[ERROR] while write", err)
+		c.close()
+	}
 }
 
 func (c *connection) close() {
 	if r, err := GetRoom(c); err == nil {
-		r.removeConnection(c)
+		r.RemoveConnection(c)
 	}
 	c.wsConn.Close()
 }
 
-// getConnectionPairWithEmptySlot looks trough all connectionPairs and finds one which has only 1 player
-// if there is none a new connectionPair is created and the player is added to that pair
-// func getConnectionPairWithEmptySlot() (*room, int) {
-// 	sizeBefore := len(rooms)
-// 	// find connections with 1 player first and pair if possible
-// 	for _, h := range rooms {
-// 		if len(h.connections) == 1 {
-// 			log.Printf("Players paired")
-// 			return h, len(h.connections)
-// 		}
-// 	}
-
-//TODO: I need to remove orphaned connectionPairs from the stack
-
-// if no emtpy slow was found at all, we create a new connectionPair
-// h := newRoom()
-// rooms = append(rooms, h)
-// log.Printf("Player seated in new connectionPair no. %v", len(rooms))
-// return rooms[sizeBefore], 0
-// }
-
 func getId(ctx *gin.Context, key string) uuid.UUID {
-	var id uuid.UUID
-
 	paramId, ok := ctx.GetQuery(key)
 
 	if ok {
-		id, _ = uuid.Parse(paramId)
-	} else {
-		id = uuid.New()
+		if id, err := uuid.Parse(paramId); err == nil {
+			return id
+		}
 	}
 
-	return id
+	return uuid.New()
 }
 
 // createWS is the routers HandleFunc for websocket connections
@@ -118,13 +94,3 @@ func createWS(ctx *gin.Context) {
 	go c.read(wg)
 	wg.Wait()
 }
-
-// sendGameStateToConnection broadcasts the current gameState as JSON to all players
-// within a connectionPair
-// func sendGameStateToConnection(wsConn *websocket.Conn, c *connection) {
-// 	err := wsConn.WriteMessage(websocket.TextMessage, c.cp.g.toJSON())
-// 	//removing connection if updating gameState fails
-// 	if err != nil {
-// 		c.cp.removeConnection(c)
-// 	}
-// }

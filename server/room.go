@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"errors"
 	"log"
 	"sync"
@@ -8,9 +9,22 @@ import (
 	"github.com/google/uuid"
 )
 
+const (
+	CONNECTION_CONNECTED    status = "CONNECTION_CONNECTED"
+	CONNECTION_DISCONNECTED status = "CONNECTION_DISCONNECTED"
+	ROOM_REMOVED            status = "ROOM_REMOVED"
+)
+
+const SENDER_ROOM sender = "ROOM"
+
 // Room manages the connections
 type room struct {
-	id            uuid.UUID
+	Connection    uuid.UUID // Player that modified the status
+	Data          transferData
+	Game          game
+	Id            uuid.UUID
+	Status        status
+	Sender        sender
 	connectionsMx sync.RWMutex              // mutex to protect connections
 	connections   map[uuid.UUID]*connection // Registered connections
 }
@@ -19,47 +33,33 @@ type Rooms map[uuid.UUID]*room
 
 var rooms = make(Rooms)
 
-// newRoom is the constructor for storing connections in a room
-func newRoom(id uuid.UUID) *room {
+// NewRoom is the constructor for storing connections in a room
+func NewRoom(id uuid.UUID) *room {
 	r := &room{
-		id:            id,
+		Id:            id,
+		Game:          NewGame(),
+		Sender:        SENDER_ROOM,
 		connectionsMx: sync.RWMutex{},
 		connections:   make(map[uuid.UUID]*connection),
 	}
 
 	rooms[id] = r
-
-	// go func() {
-	// 	for {
-	// 		select {
-	// 		//waiting for an update of one of the clients in the connection pair
-	// 		case <-cp.receiveMove:
-	// 		case <-time.After(timeoutBeforeReBroadcast * time.Second): //After x seconds we do broadcast again to see if the opp. is still there
-	// 		}
-
-	// 		cp.connectionsMx.RLock()
-	// 		for c := range cp.connections {
-	// 			select {
-	// 			case c.doBroadcast <- true:
-	// 			// stop trying to send to this connection after trying for 1 second.
-	// 			// if we have to stop, it means that a reader died so remove the connection also.
-	// 			case <-time.After(timeoutBeforeConnectionDrop * time.Second):
-	// 				cp.removeConnection(c)
-	// 			}
-	// 		}
-	// 		cp.connectionsMx.RUnlock()
-	// 	}
-	// }()
 	return r
 }
 
 func JoinRoom(conn *connection) *room {
-	if gr, ok := rooms[conn.roomId]; ok {
-		return gr
+	if r, ok := rooms[conn.roomId]; ok {
+		log.Println("[Player] rejoined room")
+		return r
 	}
 
-	r := newRoom(conn.roomId)
-	r.addConnection(conn)
+	for k, _ := range rooms {
+		rooms[k].AddConnection(conn)
+		return rooms[k]
+	}
+
+	r := NewRoom(conn.roomId)
+	r.AddConnection(conn)
 
 	return r
 }
@@ -72,28 +72,50 @@ func GetRoom(conn *connection) (*room, error) {
 	return &room{}, errors.New("room was not found")
 }
 
-// addConnection adds a players connection to the connectionPair
-func (r *room) addConnection(conn *connection) {
+func (r *room) UpdateConnection(s status, conn *connection) {
+	r.Status = s
+	r.Connection = conn.id
+}
+
+// adds a players connection to the room
+func (r *room) AddConnection(conn *connection) {
 	r.connectionsMx.Lock()
 	defer r.connectionsMx.Unlock()
 	r.connections[conn.id] = conn
-	// fmt.Println("[Player] connected")
+	r.UpdateConnection(CONNECTION_CONNECTED, conn)
 	log.Println("[Player] connected")
+	r.Broadcast(r.ToJSON())
+	StartGame(r, conn)
 }
 
-// removeConnection removes a player
-func (r *room) removeConnection(conn *connection) {
+// removes a player
+func (r *room) RemoveConnection(conn *connection) {
 	r.connectionsMx.Lock()
 	defer r.connectionsMx.Unlock()
-	// if _, ok := r.connections[conn.id]; ok {
-	// 	// close(conn.doBroadcast)
-	// }
+
 	delete(r.connections, conn.id)
+	r.UpdateConnection(CONNECTION_DISCONNECTED, conn)
 
 	if len(r.connections) == 0 {
-		log.Printf("[Room] cleared: %s", r.id)
-		delete(rooms, r.id)
+		log.Printf("[Room] removed: %s", r.Id)
+		delete(rooms, r.Id)
+		r.UpdateConnection(ROOM_REMOVED, conn)
 	}
 
 	log.Println("[Player] disconnected")
+	r.Broadcast(r.ToJSON())
+}
+
+func (r *room) Broadcast(data []byte) {
+	for _, conn := range r.connections {
+		conn.write(data)
+	}
+}
+
+func (r *room) ToJSON() []byte {
+	j, err := json.Marshal(r)
+	if err != nil {
+		log.Printf("[Error] in marshalling json: %s", err)
+	}
+	return j
 }
