@@ -19,7 +19,7 @@ type ticTacToe string
 
 const (
 	X ticTacToe = "X"
-	Y ticTacToe = "Y"
+	O ticTacToe = "O"
 )
 
 type player map[uuid.UUID]ticTacToe
@@ -70,7 +70,7 @@ func StartGame(r *room, conn *connection) {
 	if len(r.connections) == 2 && r.Game.Status == GAME_PENDING {
 		r.Game.Turn = conn.id
 		r.Game.Status = GAME_STARTED
-		r.Game.Player[conn.id] = Y
+		r.Game.Player[conn.id] = O
 		r.Sender = SENDER_GAME
 		r.Broadcast(r.ToJSON())
 	}

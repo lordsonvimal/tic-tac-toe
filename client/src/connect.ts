@@ -1,19 +1,17 @@
 type Options = {
   onOpen?: (event: Event) => void
-  onClose?: (event: Event) => void
+  onClose?: (event: CloseEvent) => void
   onError?: (event: Event) => void
-  onMessage?: (event: Event) => void
+  onMessage?: (event: MessageEvent<any>) => void
 };
 
 export function connect(url: string, options: Options = {}) {
   const websocket = new WebSocket(url);
   websocket.onopen = evt => {
-    console.log("Open");
     if (options.onOpen) options.onOpen(evt);
   }
 
   websocket.onclose = evt => {
-    console.log("Close");
     if (options.onClose) options.onClose(evt);
     websocket.close();
   }

@@ -20,7 +20,6 @@ const SENDER_ROOM sender = "ROOM"
 // Room manages the connections
 type room struct {
 	Connection    uuid.UUID // Player that modified the status
-	Data          transferData
 	Game          game
 	Id            uuid.UUID
 	Status        status
