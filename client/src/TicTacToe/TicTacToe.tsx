@@ -12,8 +12,6 @@ const cells = [0, 1, 2, 3, 4, 5, 6, 7, 8];
 export function TicTacToe(props: Props) {
 
   const handleClick = (cell: number) => {
-    console.log("PLayer Turn: ", props.isPlayerTurn);
-    
     if (!props.isPlayerTurn) return;
     if (props.moves[cell]) return;
     // Make move

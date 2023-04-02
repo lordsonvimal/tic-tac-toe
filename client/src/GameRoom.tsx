@@ -127,9 +127,9 @@ export function GameRoom() {
     setIsPlayerTurn(false);
   };
 
-  createEffect(() => {
-    console.log(`ROOM ID: ${roomId()}, PLAYER ID: ${playerId()}, SHAPE: ${playerShape()}, TURN: ${isPlayerTurn()}`);
-  });
+  // createEffect(() => {
+  //   console.log(`ROOM ID: ${roomId()}, PLAYER ID: ${playerId()}, SHAPE: ${playerShape()}, TURN: ${isPlayerTurn()}`);
+  // });
 
   return (
     <>
