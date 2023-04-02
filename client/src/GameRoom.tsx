@@ -1,6 +1,6 @@
 import { TicTacToe } from "./TicTacToe/TicTacToe";
 import { connect } from "./connect";
-import { createSignal, Match, Switch, onCleanup } from "solid-js";
+import { createSignal, Match, Switch, onCleanup, createEffect } from "solid-js";
 
 const CONNECTION_STATUS = {
   connecting: "CONNECTION_CONNECTING",
@@ -13,7 +13,8 @@ const GAME_STATUS = {
   pending: "GAME_PENDING",
   started: "GAME_STARTED",
   ended: "GAME_ENDED",
-  turn: "PLAYER_TURN"
+  turn: "PLAYER_TURN",
+  turnChange: "PLAYER_TURN_CHANGE"
 };
 
 type TicTacToe = {
@@ -36,7 +37,7 @@ export function GameRoom() {
   const [roomId, setRoomId] = createSignal("");
   const [isPlayerTurn, setIsPlayerTurn] = createSignal(false);
   const [playerShape, setPlayerShape] = createSignal("");
-  const [moves, setMoves] = createSignal<Record<number, "X" | "O" >>({});
+  const [moves, setMoves] = createSignal<Record<number, string >>({});
 
   const onOpen = () => {
     setConnectionStatus(CONNECTION_STATUS.connected);
@@ -53,23 +54,28 @@ export function GameRoom() {
   const onMessage = (event: MessageEvent<string>) => {
     try {
       const data = JSON.parse(event.data) as TicTacToe;
+      console.log(data);
       switch(data.Game.Status) {
         case GAME_STATUS.turn: {
           if (moves()[data.Game.Data]) return;
           // Receive other player move from server
-          setMoves({ ...moves(), [data.Game.Data]: data.Game.Player[data.Connection] });
-          setIsPlayerTurn(true);
+          setMoves({ ...moves(), [data.Game.Data]: data.Game.Turn });
+          return;
+        }
+        case GAME_STATUS.turnChange: {
+          setIsPlayerTurn(data.Game.Turn === playerShape());
           return;
         }
         case GAME_STATUS.started: {
-          setIsPlayerTurn(data.Game.Turn === data.Connection);
-          setPlayerShape(data.Game.Player[data.Connection]);
+          setPlayerShape(data.Game.Player[playerId()]);
+          setIsPlayerTurn(data.Game.Turn === playerShape());
           setGameStatus(GAME_STATUS.started);
           return;
         }
       }
       switch(data.Status) {
         case CONNECTION_STATUS.connected: {
+          if (playerId()) return; // Already has a player Id
           setConnectionStatus(CONNECTION_STATUS.connected);
           setPlayerId(data.Connection);
           setRoomId(data.Id);
@@ -77,10 +83,11 @@ export function GameRoom() {
         }
         case CONNECTION_STATUS.disconnected: {
           setConnectionStatus(CONNECTION_STATUS.disconnected);
+          setPlayerId("");
+          setRoomId("");
           return;
         }
       }
-      console.log(data);
     } catch(e) {
       console.log("Unable to parse: ", event.data);
     }
@@ -93,6 +100,8 @@ export function GameRoom() {
   });
 
   const sendMessage = (data: TicTacToe) => {
+    console.log("Sending data: ", data);
+    
     websocket.send(JSON.stringify(data));
   };
 
@@ -103,7 +112,7 @@ export function GameRoom() {
         Data: num,
         Player: {},
         Status: GAME_STATUS.turn,
-        Turn: playerId()
+        Turn: playerShape()
       },
       Id: roomId(),
       Sender: "GAME",
@@ -112,10 +121,15 @@ export function GameRoom() {
   }
 
   const onTurn = (num: number) => {
-    setMoves({...moves(), num: playerShape()});
+    const newMoves = {...moves(), [num]: playerShape()};
+    setMoves(newMoves);
     sendMessage(getTurnData(num));
     setIsPlayerTurn(false);
   };
+
+  createEffect(() => {
+    console.log(`ROOM ID: ${roomId()}, PLAYER ID: ${playerId()}, SHAPE: ${playerShape()}, TURN: ${isPlayerTurn()}`);
+  });
 
   return (
     <>

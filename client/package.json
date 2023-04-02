@@ -20,6 +20,7 @@
   },
   "devDependencies": {
     "sass": "^1.60.0",
+    "solid-devtools": "^0.26.0",
     "typescript": "^5.0.3",
     "vite": "^4.2.1",
     "vite-plugin-solid": "^2.6.1"

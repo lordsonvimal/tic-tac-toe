@@ -17,12 +17,10 @@ export function connect(url: string, options: Options = {}) {
   }
 
   websocket.onmessage = evt => {
-    console.log("Response: ", evt.data);
     if (options.onMessage) options.onMessage(evt);
   }
 
   websocket.onerror = evt => {
-    console.log("Error: ", evt);
     if (options.onError) options.onError(evt);
     websocket.close();
   }

@@ -27,9 +27,17 @@ func (c *connection) read(wg *sync.WaitGroup) {
 		if err != nil {
 			log.Println("[ERROR] while read", err)
 			wg.Done()
+
+			if r, err := GetRoom(c); err == nil {
+				log.Println("[SUCCESS] removing connection with id: ", c.id)
+				r.RemoveConnection(c)
+			}
+
 			c.close()
 			break
 		}
+
+		ReadGameState(c, clientMessage)
 	}
 }
 
@@ -37,6 +45,12 @@ func (c *connection) read(wg *sync.WaitGroup) {
 func (c *connection) write(data []byte) {
 	if err := c.wsConn.WriteMessage(websocket.TextMessage, data); err != nil {
 		log.Println("[ERROR] while write", err)
+
+		if r, err := GetRoom(c); err == nil {
+			log.Println("[SUCCESS] removing connection with id: ", c.id)
+			r.RemoveConnection(c)
+		}
+
 		c.close()
 	}
 }
@@ -86,7 +100,8 @@ func createWS(ctx *gin.Context) {
 		wsConn: wsConn,
 	}
 
-	JoinRoom(c)
+	ro := JoinRoom(c)
+	c.roomId = ro.Id
 
 	//the websocket connection is always open. Close it from a client request / response
 	wg := &sync.WaitGroup{}

@@ -84,7 +84,9 @@ func (r *room) AddConnection(conn *connection) {
 	r.UpdateConnection(CONNECTION_CONNECTED, conn)
 	log.Println("[Player] connected")
 	r.Broadcast(r.ToJSON())
-	StartGame(r, conn)
+	if isStarted := StartGame(r, conn); isStarted {
+		r.Broadcast(r.ToJSON())
+	}
 }
 
 // removes a player
@@ -106,6 +108,7 @@ func (r *room) RemoveConnection(conn *connection) {
 }
 
 func (r *room) Broadcast(data []byte) {
+	log.Printf("Broadcasting data to room: %s", r.Id)
 	for _, conn := range r.connections {
 		conn.write(data)
 	}

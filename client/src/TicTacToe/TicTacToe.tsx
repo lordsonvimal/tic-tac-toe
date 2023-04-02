@@ -12,6 +12,8 @@ const cells = [0, 1, 2, 3, 4, 5, 6, 7, 8];
 export function TicTacToe(props: Props) {
 
   const handleClick = (cell: number) => {
+    console.log("PLayer Turn: ", props.isPlayerTurn);
+    
     if (!props.isPlayerTurn) return;
     if (props.moves[cell]) return;
     // Make move
@@ -21,7 +23,7 @@ export function TicTacToe(props: Props) {
   return (
     <div class="tic-tac-toe">
       <For each={cells}>
-        {(item, index) => <button class="cell clickable" onClick={[handleClick, index]}>{props.moves[item] || ""}</button>}
+        {(item, index) => <button class="cell clickable" onClick={[handleClick, index()]}>{props.moves[item] || ""}</button>}
       </For>
     </div>
   );
