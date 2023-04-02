@@ -53,7 +53,7 @@ func JoinRoom(conn *connection) *room {
 		return r
 	}
 
-	for k, _ := range rooms {
+	for k := range rooms {
 		rooms[k].AddConnection(conn)
 		return rooms[k]
 	}
