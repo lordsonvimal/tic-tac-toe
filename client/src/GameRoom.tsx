@@ -55,6 +55,10 @@ export function GameRoom() {
       const data = JSON.parse(event.data) as TicTacToe;
       switch(data.Game.Status) {
         case GAME_STATUS.turn: {
+          if (moves()[data.Game.Data]) return;
+          // Receive other player move from server
+          setMoves({ ...moves(), [data.Game.Data]: data.Game.Player[data.Connection] });
+          setIsPlayerTurn(true);
           return;
         }
         case GAME_STATUS.started: {
@@ -110,6 +114,7 @@ export function GameRoom() {
   const onTurn = (num: number) => {
     setMoves({...moves(), num: playerShape()});
     sendMessage(getTurnData(num));
+    setIsPlayerTurn(false);
   };
 
   return (
