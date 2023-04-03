@@ -12,7 +12,6 @@ const cells = [0, 1, 2, 3, 4, 5, 6, 7, 8];
 export function TicTacToe(props: Props) {
 
   const handleClick = (cell: number) => {
-    if (!props.isPlayerTurn) return;
     if (props.moves[cell]) return;
     // Make move
     props.onTurn(cell);
@@ -22,8 +21,8 @@ export function TicTacToe(props: Props) {
     <div class="tic-tac-toe">
       <For each={cells}>
         {(item, index) => {
-          console.log("rendering item: ", item);
-          return <button class="cell clickable" onClick={[handleClick, index()]}>{props.moves[item] || ""}</button>
+          const canClick = () => !props.moves[index()] && props.isPlayerTurn;
+          return <button classList={{ cell: true, clickable: canClick() }} onClick={() => canClick() ? handleClick(index()) : null}>{props.moves[item] || ""}</button>
         }}
       </For>
     </div>

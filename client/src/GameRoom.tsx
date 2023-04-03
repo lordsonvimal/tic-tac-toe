@@ -169,9 +169,11 @@ export function GameRoom() {
     setIsPlayerTurn(false);
   };
 
+  const canPlayerPlay = () => isPlayerTurn() && gameStatus() === GAME_STATUS.started;
+
   return (
     <>
-      <TicTacToe isPlayerTurn={isPlayerTurn() && gameStatus() === GAME_STATUS.started} moves={moves()} onTurn={onTurn} />
+      <TicTacToe isPlayerTurn={canPlayerPlay()} moves={moves()} onTurn={onTurn} />
       <Show when={winner()}>{`${winner()}`}</Show>
       <Switch>
         <Match when={connectionStatus() === CONNECTION_STATUS.connecting}>

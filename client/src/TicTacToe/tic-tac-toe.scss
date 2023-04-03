@@ -1,5 +1,8 @@
 .tic-tac-toe {
+  background-color: black;
+  border-radius: 5px;
   display: grid;
+  gap: 2px;
   grid-template-columns: 1fr 1fr 1fr;
   grid-template-rows: 1fr 1fr 1fr;
   height: min(100vw, calc(100vh - 100px));
@@ -7,10 +10,21 @@
   width: min(100vw, calc(100vh - 100px));
 
   .cell {
-    border: 1px solid gray;
-  }
-}
+    border: none;
+    border-radius: 0;
 
-.clickable {
-  cursor: pointer;
+    &:hover {
+      background-color: hsl(0, 20.15%, 92.79%);
+      color: hsl(0, 52%, 47%);
+    }
+  }
+
+  .clickable {
+    cursor: pointer;
+
+    &:hover {
+      background-color: hsl(166, 81%, 95%);
+      color: hsl(166, 71%, 37%);
+    }
+  }
 }
