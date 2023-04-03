@@ -1,6 +1,6 @@
 import { TicTacToe } from "./TicTacToe/TicTacToe";
 import { connect } from "./connect";
-import { createSignal, Match, Switch, onCleanup, createEffect, Show } from "solid-js";
+import { createSignal, Match, Switch, onCleanup, Show } from "solid-js";
 
 const CONNECTION_STATUS = {
   connecting: "CONNECTION_CONNECTING",
@@ -51,7 +51,7 @@ export function GameRoom() {
       else setWinner(`YOU LOSE!!!`);
     }
 
-    const compare = (a: any, b: any, c: any) => {
+    const isWin = (a: any, b: any, c: any) => {
       if (a) {
         if (a === b && a === c) {
           setEndGame(a);
@@ -61,14 +61,14 @@ export function GameRoom() {
       return false;
     }
 
-    if (compare(moves()[0], moves()[1], moves()[2])) return;
-    if (compare(moves()[0], moves()[3], moves()[6])) return;
-    if (compare(moves()[0], moves()[4], moves()[8])) return;
-    if (compare(moves()[1], moves()[4], moves()[7])) return;
-    if (compare(moves()[2], moves()[5], moves()[8])) return;
-    if (compare(moves()[2], moves()[4], moves()[6])) return;
-    if (compare(moves()[3], moves()[4], moves()[5])) return;
-    if (compare(moves()[6], moves()[7], moves()[8])) return;
+    if (isWin(moves()[0], moves()[1], moves()[2])) return;
+    if (isWin(moves()[0], moves()[3], moves()[6])) return;
+    if (isWin(moves()[0], moves()[4], moves()[8])) return;
+    if (isWin(moves()[1], moves()[4], moves()[7])) return;
+    if (isWin(moves()[2], moves()[5], moves()[8])) return;
+    if (isWin(moves()[2], moves()[4], moves()[6])) return;
+    if (isWin(moves()[3], moves()[4], moves()[5])) return;
+    if (isWin(moves()[6], moves()[7], moves()[8])) return;
 
     if (Object.keys(moves()).length === 9) setEndGame(null);
 
@@ -146,8 +146,6 @@ export function GameRoom() {
   });
 
   const sendMessage = (data: TicTacToe) => {
-    console.log("Sending data: ", data);
-    
     websocket.send(JSON.stringify(data));
   };
 
@@ -174,7 +172,7 @@ export function GameRoom() {
   return (
     <>
       <TicTacToe isPlayerTurn={isPlayerTurn() && gameStatus() === GAME_STATUS.started} moves={moves()} onTurn={onTurn} />
-      <Show when={winner()}>{`winner is ${winner()}`}</Show>
+      <Show when={winner()}>{`${winner()}`}</Show>
       <Switch>
         <Match when={connectionStatus() === CONNECTION_STATUS.connecting}>
           <div>Connecting to game room</div>
