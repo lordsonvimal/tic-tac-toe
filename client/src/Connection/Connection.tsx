@@ -1,19 +1,25 @@
-import { createContext, createSignal, onCleanup } from "solid-js";
-import { connect } from "../connect";
+import { Accessor, createContext, createSignal, onCleanup, useContext } from "solid-js";
+import { connect } from "../services/websocket";
 
-const ConnectionContext = createContext();
+export type ConnectionValues = {
+  connectionStatus: Accessor<string>,
+  sendMessage: <T>(data: T) => void,
+  subscribe: (name: string, event: <T>(data: T) => void) => void,
+  unsubscribe: (name: string) => boolean
+};
 
-const CONNECTION_STATUS = {
+const ConnectionContext = createContext<ConnectionValues>();
+
+export const CONNECTION_STATUS = {
   connecting: "CONNECTION_CONNECTING",
-  connected: "CONNECTION_CONNECTED",
+  connected: "CONNECTION_CONNECTED", // You are connected
+  connectedToRoom: "CONNECTION_CONNECTED_TO_ROOM", // Broadcast message when someone connected
   disconnected: "CONNECTION_DISCONNECTED",
   failed: "CONNECTION_FAILED"
 };
 
 type Props = {
-  children: any,
-  onConnect: <T>(data: Record<string, T>, isMyConnection: boolean) => void,
-  onDisconnect: <T>(data: Record<string, T>, isMyConnection: boolean) => void
+  children: any
 };
 
 export function Connection(props: Props) {
@@ -41,14 +47,10 @@ export function Connection(props: Props) {
       switch(data.Status) {
         case CONNECTION_STATUS.connected: {
           setConnectionStatus(CONNECTION_STATUS.connected);
-          if (!connectionId()) setConnectionId(data.connectionId);
-          if (props.onConnect) props.onConnect(data, data.connectionId === connectionId());
+          setConnectionId(data.Connection);
         }
         case CONNECTION_STATUS.disconnected: {
           setConnectionStatus(CONNECTION_STATUS.disconnected);
-          if (props.onDisconnect) props.onDisconnect(data, data.connectionId === connectionId());
-          // setPlayerId("");
-          // setRoomId("");
         }
       }
 
@@ -79,8 +81,7 @@ export function Connection(props: Props) {
   };
 
   const subscribe = (name: string, event: <T>(data: T) => void) => {
-    const isSuccess = subscribers.set(name, event);
-    return isSuccess;
+    subscribers.set(name, event);
   };
 
   const unsubscribe = (name: string) => {
@@ -93,3 +94,5 @@ export function Connection(props: Props) {
 
   return <ConnectionContext.Provider value={connection}>{props.children}</ConnectionContext.Provider>
 }
+
+export function useConnection() { return useContext(ConnectionContext); }

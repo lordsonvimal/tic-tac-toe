@@ -1,13 +1,6 @@
-import { TicTacToe } from "./TicTacToe/TicTacToe";
-import { connect } from "./connect";
-import { createSignal, Match, Switch, onCleanup, Show } from "solid-js";
-
-const CONNECTION_STATUS = {
-  connecting: "CONNECTION_CONNECTING",
-  connected: "CONNECTION_CONNECTED",
-  disconnected: "CONNECTION_DISCONNECTED",
-  failed: "CONNECTION_FAILED"
-};
+import { TicTacToe } from "./tic-tac-toe";
+import { createSignal, Match, Switch, Show } from "solid-js";
+import { CONNECTION_STATUS, ConnectionValues, useConnection } from "./connection";
 
 const GAME_STATUS = {
   pending: "GAME_PENDING",
@@ -30,7 +23,6 @@ type TicTacToe = {
 };
 
 export function GameRoom() {
-  const [connectionStatus, setConnectionStatus] = createSignal<typeof GAME_STATUS[keyof typeof GAME_STATUS]>(CONNECTION_STATUS.connecting);
   const [gameStatus, setGameStatus] = createSignal(GAME_STATUS.pending);
   const [playerId, setPlayerId] = createSignal("");
   const [opponentId, setOpponentId] = createSignal("");
@@ -39,6 +31,48 @@ export function GameRoom() {
   const [playerShape, setPlayerShape] = createSignal("");
   const [moves, setMoves] = createSignal<Record<number, string >>({});
   const [winner, setWinner] = createSignal("");
+
+  const onMessage = (data: any) => {
+    switch(data.Game.Status) {
+      case GAME_STATUS.turn: {
+        // Receive other player move from server
+        updateMoves(data.Game.Data, data.Game.Turn);
+        return;
+      }
+      case GAME_STATUS.turnChange: {
+        setIsPlayerTurn(data.Game.Turn === playerShape());
+        return;
+      }
+      case GAME_STATUS.started: {
+        setPlayerShape(data.Game.Player[playerId()]);
+        setIsPlayerTurn(data.Game.Turn === playerShape());
+        setGameStatus(GAME_STATUS.started);
+        Object.keys(data.Game.Player).forEach(id => {
+          if (id !== playerId()) {
+            setOpponentId(id);
+          }
+        });
+        return;
+      }
+    }
+    switch(data.Status) {
+      case CONNECTION_STATUS.connected: {
+        if (playerId()) return; // Already has a player Id
+        setPlayerId(data.Connection);
+        setRoomId(data.Id);
+        return;
+      }
+      case CONNECTION_STATUS.disconnected: {
+        setPlayerId("");
+        setRoomId("");
+        return;
+      }
+    }
+  };
+
+  const { connectionStatus, sendMessage, subscribe } = useConnection() as ConnectionValues;
+
+  subscribe("GAMEROOM", onMessage);
 
   const checkWinner = () => {
     const setEndGame = (match: string | null) => {
@@ -80,73 +114,6 @@ export function GameRoom() {
     const newMoves = {...moves(), [num]: shape};
     setMoves(newMoves);
     checkWinner();
-  };
-
-  const onOpen = () => {
-    setConnectionStatus(CONNECTION_STATUS.connected);
-  };
-
-  const onClose = () => {
-    setConnectionStatus(CONNECTION_STATUS.disconnected);
-  };
-
-  const onError = () => {
-    setConnectionStatus(CONNECTION_STATUS.failed);
-  };
-  
-  const onMessage = (event: MessageEvent<string>) => {
-    try {
-      const data = JSON.parse(event.data) as TicTacToe;
-      switch(data.Game.Status) {
-        case GAME_STATUS.turn: {
-          // Receive other player move from server
-          updateMoves(data.Game.Data, data.Game.Turn);
-          return;
-        }
-        case GAME_STATUS.turnChange: {
-          setIsPlayerTurn(data.Game.Turn === playerShape());
-          return;
-        }
-        case GAME_STATUS.started: {
-          setPlayerShape(data.Game.Player[playerId()]);
-          setIsPlayerTurn(data.Game.Turn === playerShape());
-          setGameStatus(GAME_STATUS.started);
-          Object.keys(data.Game.Player).forEach(id => {
-            if (id !== playerId()) {
-              setOpponentId(id);
-            }
-          });
-          return;
-        }
-      }
-      switch(data.Status) {
-        case CONNECTION_STATUS.connected: {
-          if (playerId()) return; // Already has a player Id
-          setConnectionStatus(CONNECTION_STATUS.connected);
-          setPlayerId(data.Connection);
-          setRoomId(data.Id);
-          return;
-        }
-        case CONNECTION_STATUS.disconnected: {
-          setConnectionStatus(CONNECTION_STATUS.disconnected);
-          setPlayerId("");
-          setRoomId("");
-          return;
-        }
-      }
-    } catch(e) {
-      console.log("Unable to parse: ", event.data);
-    }
-  };
-
-  const websocket = connect("ws://localhost:3000/ws", { onOpen, onClose, onError, onMessage });
-
-  onCleanup(() => {
-    websocket.close();
-  });
-
-  const sendMessage = (data: TicTacToe) => {
-    websocket.send(JSON.stringify(data));
   };
 
   const getTurnData = (num: number): TicTacToe => {
