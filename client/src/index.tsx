@@ -1,7 +1,7 @@
 import { render } from "solid-js/web";
+import { Connection } from "./connection";
 import { GameRoom } from "./GameRoom";
 import "./index.scss";
-import { Connection } from "./connection/connection";
 
 render(
   () => (

@@ -1,2 +1,2 @@
-export { Connection, CONNECTION_STATUS, useConnection } from "./connection";
-export type { ConnectionValues } from "./connection";
+export { Connection, CONNECTION_STATUS, useConnection } from "./Connection";
+export type { ConnectionValues } from "./Connection";

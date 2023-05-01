@@ -44,14 +44,20 @@ export function Connection(props: Props) {
     try {
       const data = JSON.parse(event.data);
 
-      switch(data.Status) {
+      switch (data.Status) {
         case CONNECTION_STATUS.connected: {
-          setConnectionStatus(CONNECTION_STATUS.connected);
-          setConnectionId(data.Connection);
+          if (!connectionId()) {
+            setConnectionStatus(CONNECTION_STATUS.connected);
+            setConnectionId(data.Connection);
+          }
+          break;
         }
         case CONNECTION_STATUS.disconnected: {
           setConnectionStatus(CONNECTION_STATUS.disconnected);
+          break;
         }
+        default:
+          break;
       }
 
       for (let notify of subscribers.values()) {
