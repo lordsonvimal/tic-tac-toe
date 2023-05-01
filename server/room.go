@@ -44,7 +44,7 @@ func NewRoom(id uuid.UUID) *room {
 
 func JoinRoom(conn *connection) *room {
 	if r, ok := rooms[conn.roomId]; ok {
-		log.Println("[Player] rejoined room")
+		log.Printf("[Player] rejoined room %s", conn.id)
 		return r
 	}
 
